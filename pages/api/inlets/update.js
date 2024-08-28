@@ -8,12 +8,17 @@ export default async function handler(req, res) {
   switch (req.method) {
     //   http://localhost:3000/api/inlets/update?name=new name&id=61e983a630328ac2f0cca0a4
     case "POST": {
+      let body = JSON.parse(req.body);
+      let inletId = body.inletId;
+      let code = body.code;
+      // console.log(req.body);
+      // console.log("HERE:", inletId, code);
       try {
         let inlets = await db.collection("inlets").updateOne(
           {
-            _id: new ObjectId(req.query.id),
+            _id: new ObjectId(inletId),
           },
-          { $set: { code: decodeURIComponent(req.query.code) } }
+          { $set: { code } }
         );
         return res.json({
           message: JSON.parse(JSON.stringify(inlets)),

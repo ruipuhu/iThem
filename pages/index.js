@@ -19,7 +19,7 @@ export default function Home() {
         <Row align="middle">
           <Col span={3}></Col>
           <Col align="middle" span={18}>
-            <Title>iThem</Title>
+            <Title>Legato</Title>
             <p>SCRIPTING WITH TRIGGERS AND ACTIONS</p>
             <Controller></Controller>
           </Col>

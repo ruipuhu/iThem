@@ -22,7 +22,10 @@ export default async function handler(req, res) {
       });
     }
     if (typeof req.body.actionFields === "undefined") {
-      console.error("1) Missing req.body.actionFields. req.body is: ", req.body);
+      console.error(
+        "1) Missing req.body.actionFields. req.body is: ",
+        req.body
+      );
       return res.status(400).json({
         success: false,
         errors: [{ message: "Missing ActionFields Key" }],
@@ -48,10 +51,7 @@ export default async function handler(req, res) {
     })
     .toArray();
 
-  let inlets = await db
-    .collection("inlets")
-    .find({email})
-    .toArray();
+  let inlets = await db.collection("inlets").find({ email }).toArray();
 
   if (inlet.length != 1) {
     return res.status(400).json({
@@ -74,10 +74,10 @@ export default async function handler(req, res) {
     })
     .toArray();
 
-  let scheduledCount = await db.collection("sched").countDocuments({email});
+  let scheduledCount = await db.collection("sched").countDocuments({ email });
 
   // variables stored as strings... so lets fix that here.
-  variables.forEach(v => {
+  variables.forEach((v) => {
     if (v.type === "boolean") {
       v.value = v.value === "true";
     } else if (v.type === "int") {
@@ -111,7 +111,7 @@ export default async function handler(req, res) {
     return found.value;
   };
 
-  const saveState = (val, name) => {
+  const saveState = (name, val) => {
     const found = variables.find((elm) => elm.name == name);
     // console.log(found);
     // console.error(name, ":", found);
@@ -121,9 +121,13 @@ export default async function handler(req, res) {
 
     const type = found.type;
     if (type === "boolean" && !(true === val || false === val)) {
-      throw Error(`saveState(${val}, "${name}") failed: ${val} is not a boolean.`);
+      throw Error(
+        `saveState("${name}", ${val}) failed: ${val} is not a boolean.`
+      );
     } else if (["int", "double"].includes(type) && typeof val !== "number") {
-      throw Error(`saveState(${val}, "${name}") failed: ${val} is not a number.`);
+      throw Error(
+        `saveState("${name}", ${val}) failed: ${val} is not a number.`
+      );
     } else if (type === "int") {
       val = parseInt(val);
     } else if (type === "JSON") {
@@ -169,16 +173,19 @@ export default async function handler(req, res) {
   };
 
   let _log = [];
-  const ithemLog = function(...args) {
+  const ithemLog = function (...args) {
     _log.push(
-      args.map(s => typeof s === "object" ? JSON.stringify(s) : "" + s).join(" ")
+      args
+        .map((s) => (typeof s === "object" ? JSON.stringify(s) : "" + s))
+        .join(" ")
     );
   };
+  const log = ithemLog;
 
   // TODO: if we have to many things scheduled, this should throw an error.
   // We can fetch the currently scheduled things above.
   const scheduleOutlet = (outlet, time, data) => {
-    if (typeof time === 'object') {
+    if (typeof time === "object") {
       time = time.getTime ? time.getTime() : 0;
     }
     console.log("Scheduling: ", outlet, time, data);
@@ -190,21 +197,23 @@ export default async function handler(req, res) {
     scheduledCount++;
 
     // Ideally we'd use await, but... if I recall, we cannot :)
-    db.collection("sched").insertOne({
-      email,
-      outletName: outlet,
-      outletArg: data,
-      schedTime: time,
-      executed: false,
-      createdAt: new Date(),
-    }).then(res=> {
-      console.log("DID IT", res);
-    });
+    db.collection("sched")
+      .insertOne({
+        email,
+        outletName: outlet,
+        outletArg: data,
+        schedTime: time,
+        executed: false,
+        createdAt: new Date(),
+      })
+      .then((res) => {
+        console.log("DID IT", res);
+      });
   };
 
   const triggerInlet = (inletName, data) => {
     // This won't actually run it for now lol
-    if (!inlets.find((x)=> x.name === inletName)) {
+    if (!inlets.find((x) => x.name === inletName)) {
       throw `triggerInlet() error: inlet "${inletName}" does not exist`;
     }
     const msg = `Inlet triggered from code in inlet ${inlet.name}`;
@@ -215,7 +224,7 @@ export default async function handler(req, res) {
   };
 
   const scheduleInlet = (inlet, time, data) => {
-    if (typeof time === 'object') {
+    if (typeof time === "object") {
       time = time.getTime ? time.getTime() : 0;
     }
     if (!inlets.find((e) => e.name === inlet)) {
@@ -226,24 +235,25 @@ export default async function handler(req, res) {
     scheduledCount++;
 
     // Ideally we'd use await, but... if I recall, we cannot :)
-    db.collection("sched").insertOne({
-      email,
-      inletName: inlet,
-      inletArg: data || "",
-      schedTime: time,
-      executed: false,
-      createdAt: new Date(),
-    }).then(res=> {
-      console.log("DID IT", res);
-    });
-
-  }
+    db.collection("sched")
+      .insertOne({
+        email,
+        inletName: inlet,
+        inletArg: data || "",
+        schedTime: time,
+        executed: false,
+        createdAt: new Date(),
+      })
+      .then((res) => {
+        console.log("DID IT", res);
+      });
+  };
 
   const Now = () => new Date().getTime();
-  const Seconds = (x) => x*1000;
-  const Minutes = (x) => Seconds(x)*60;
-  const Hours = (x) => Minutes(x)*60;
-  const Days = (x) => Hours(x)*24;
+  const Seconds = (x) => x * 1000;
+  const Minutes = (x) => Seconds(x) * 60;
+  const Hours = (x) => Minutes(x) * 60;
+  const Days = (x) => Hours(x) * 24;
 
   const handleInletLog = (inlet) => {
     const msg = "Inlet Ran By IFTTT";
@@ -259,8 +269,8 @@ export default async function handler(req, res) {
 
   // This is necessary to catch async errors that aren't caught by the try/catch surrounding vm.run().
   // Unfortunately, these errors silently fails for the user, but if we don't have this, we can bring down the server :)
-  process.on('uncaughtException', (err) => {
-    console.error('Asynchronous error caught.', err);
+  process.on("uncaughtException", (err) => {
+    console.error("Asynchronous error caught.", err);
   });
 
   const vm = new VM({
@@ -270,10 +280,15 @@ export default async function handler(req, res) {
       callOutlet,
       saveState,
       ithemLog,
+      log,
       scheduleOutlet,
       scheduleInlet,
       triggerInlet,
-      Now, Seconds, Minutes, Hours, Days,
+      Now,
+      Seconds,
+      Minutes,
+      Hours,
+      Days,
       data,
       fetch,
       setTimeout: setTimeout,
@@ -300,7 +315,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       ithemLog: _log,
-      error: (typeof error === "object" && error.message) ? error.message : error,
+      error: typeof error === "object" && error.message ? error.message : error,
     });
   }
 }
